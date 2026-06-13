@@ -10,7 +10,6 @@ ENV VITE_NAKAMA_SCHEME=$VITE_NAKAMA_SCHEME
 ENV VITE_NAKAMA_SERVER_KEY=$VITE_NAKAMA_SERVER_KEY
 COPY package.json tsconfig.json vite.config.ts ./
 COPY src ./src
-COPY public ./public
 COPY index.html ./index.html
 COPY default.conf ./default.conf
 RUN npm install && npm run build
