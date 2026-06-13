@@ -15,6 +15,8 @@ export type PlayerSeat = {
   joinedAt: string;
 };
 
+export type RoomRole = 'player' | 'spectator';
+
 export type MatchMove = {
   playerId: string;
   edgeKey: string;

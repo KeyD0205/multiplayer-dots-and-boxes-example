@@ -11,6 +11,7 @@ import {
   boxKey,
   boxesAffected,
   markDisconnected,
+  roomRoleForUser,
 } from '../src/game';
 
 describe('Dots and Boxes rules', () => {
@@ -78,6 +79,28 @@ describe('Dots and Boxes rules', () => {
 
       expect(updated.players.map((p) => p.userId)).toEqual(['p1', 'p2']);
       expect(updated.scores.p3).toBeUndefined();
+    });
+
+    test('roomRoleForUser returns player only for seated users', () => {
+      let state = createInitialSnapshot('ROOM01', 3, { userId: 'p1', username: 'Ada' });
+      state = addPlayer(state, 'p2', 'Linus');
+
+      expect(roomRoleForUser(state, 'p1')).toBe('player');
+      expect(roomRoleForUser(state, 'p2')).toBe('player');
+      expect(roomRoleForUser(state, 'spectator-1')).toBe('spectator');
+    });
+
+    test('roomRoleForUser keeps finished-room non-players as spectators', () => {
+      let state = createInitialSnapshot('ROOM01', 3, { userId: 'p1', username: 'Ada' });
+      state = addPlayer(state, 'p2', 'Linus');
+      state = {
+        ...startIfReady(state),
+        status: 'finished',
+        finishedAt: new Date().toISOString(),
+      };
+
+      expect(roomRoleForUser(state, 'p1')).toBe('player');
+      expect(roomRoleForUser(state, 'late-user')).toBe('spectator');
     });
   });
 

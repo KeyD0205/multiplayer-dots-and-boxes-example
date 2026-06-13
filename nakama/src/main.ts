@@ -1,6 +1,6 @@
 /// <reference path="../node_modules/nakama-runtime/index.d.ts" />
 
-import { addPlayer, applyMove, canJoinAsPlayer, createInitialSnapshot, markDisconnected, normalizeGridSize, startIfReady } from './game';
+import { addPlayer, applyMove, canJoinAsPlayer, createInitialSnapshot, markDisconnected, normalizeGridSize, roomRoleForUser, startIfReady } from './game';
 import { buildHistory, buildRoomRecord, readRoom, writeHistory, writeRoom } from './storage';
 import { CreateRoomPayload, EnsuredMatch, EventPayload, JoinRoomPayload, MatchHistoryRecord, MatchState, OpCode, PlayerSeat, PresenceRef, SerializedState, StatePayload } from './types';
 
@@ -211,13 +211,7 @@ function joinRoomRpc(
     snapshot = startIfReady(snapshot);
   }
 
-  var role = 'spectator';
-  for (var p = 0; p < snapshot.players.length; p += 1) {
-    if (snapshot.players[p].userId === ctx.userId) {
-      role = 'player';
-      break;
-    }
-  }
+  var role = roomRoleForUser(snapshot, ctx.userId);
 
   var updatedRoom = buildRoomRecord(snapshot, matchId, room.createdBy);
   writeRoom(nk, logger, updatedRoom);

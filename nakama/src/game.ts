@@ -1,4 +1,4 @@
-import { MatchMove, PlayerSeat, SerializedState } from './types';
+import { MatchMove, PlayerSeat, RoomRole, SerializedState } from './types';
 
 
 /** Player colors for assignment. */
@@ -136,6 +136,14 @@ export function createInitialSnapshot(roomCode: string, gridSize: number, creato
  */
 export function canJoinAsPlayer(snapshot: SerializedState, userId: string): boolean {
   return snapshot.players.some((p) => p.userId === userId) || snapshot.players.length < MAX_PLAYERS;
+}
+
+
+/**
+ * Resolve the authoritative role a user has in a room snapshot.
+ */
+export function roomRoleForUser(snapshot: SerializedState, userId: string): RoomRole {
+  return snapshot.players.some((p) => p.userId === userId) ? 'player' : 'spectator';
 }
 
 
