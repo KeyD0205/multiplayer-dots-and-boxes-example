@@ -29,6 +29,10 @@ jobs:
         run: npm ci
         working-directory: client
 
+      - name: Type-check client
+        run: npx tsc --noEmit
+        working-directory: client
+
       - name: Build client
         run: npm run build
         working-directory: client
@@ -37,8 +41,12 @@ jobs:
         run: npm ci
         working-directory: nakama
 
+      - name: Type-check Nakama runtime
+        run: npx tsc --noEmit
+        working-directory: nakama
+
       - name: Test Nakama runtime
-        run: npm test
+        run: npm test -- --coverage
         working-directory: nakama
 
       - name: Build Nakama runtime
@@ -48,16 +56,32 @@ jobs:
   containers:
     name: Build containers and validate Nginx
     runs-on: ubuntu-latest
+    needs: [app]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build client image
-        run: docker build -t dots-boxes-web:ci ./client
+        run: |
+          docker buildx build \
+            --cache-from type=gha,scope=client \
+            --cache-to type=gha,scope=client,mode=max \
+            -t dots-boxes-web:ci \
+            --load \
+            ./client
 
       - name: Build Nakama image
-        run: docker build -t dots-boxes-nakama:ci ./nakama
+        run: |
+          docker buildx build \
+            --cache-from type=gha,scope=nakama \
+            --cache-to type=gha,scope=nakama,mode=max \
+            -t dots-boxes-nakama:ci \
+            --load \
+            ./nakama
 
       - name: Validate client Nginx config
         run: docker run --rm dots-boxes-web:ci nginx -t
