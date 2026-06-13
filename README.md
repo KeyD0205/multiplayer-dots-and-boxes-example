@@ -31,6 +31,12 @@ A server-authoritative multiplayer **Dots and Boxes** implementation built for b
 
 ### Start
 
+Copy local defaults if you want to customize ports or credentials:
+
+```bash
+cp .env.example .env
+```
+
 ```bash
 make up
 ```
