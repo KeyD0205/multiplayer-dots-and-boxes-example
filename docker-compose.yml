@@ -41,7 +41,7 @@ services:
         VITE_NAKAMA_HOST: localhost
         VITE_NAKAMA_PORT: 7350
         VITE_NAKAMA_SCHEME: http
-        VITE_NAKAMA_SERVER_KEY: defaultkey
+        NAKAMA_CLIENT_PUBLIC: defaultkey
     depends_on:
       - nakama
     ports:
