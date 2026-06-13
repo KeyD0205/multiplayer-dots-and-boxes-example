@@ -4,7 +4,7 @@ import { addPlayer, applyMove, canJoinAsPlayer, createInitialSnapshot, markDisco
 import { buildHistory, buildRoomRecord, readRoom, writeHistory, writeRoom } from './storage';
 import { CreateRoomPayload, EnsuredMatch, EventPayload, JoinRoomPayload, MatchHistoryRecord, MatchState, OpCode, PlayerSeat, PresenceRef, SerializedState, StatePayload } from './types';
 
-function randomRoomCode(): string {
+export function randomRoomCode(): string {
   var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   var code = '';
   for (var i = 0; i < 6; i += 1) {
@@ -13,7 +13,7 @@ function randomRoomCode(): string {
   return code;
 }
 
-function json<T>(payload: string): T {
+export function json<T>(payload: string): T {
   if (!payload) return {} as T;
   try {
     var parsed = JSON.parse(payload);
@@ -70,7 +70,7 @@ function hasConnectedPresenceForUser(state: MatchState, userId: string): boolean
   return false;
 }
 
-function decodeMessageData(data: unknown): string {
+export function decodeMessageData(data: unknown): string {
   if (typeof data === 'string') {
     return data;
   }
