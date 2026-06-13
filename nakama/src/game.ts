@@ -4,6 +4,9 @@ import { MatchMove, PlayerSeat, SerializedState } from './types';
 /** Player colors for assignment. */
 const COLORS = ['#2563eb', '#dc2626', '#16a34a', '#9333ea', '#ea580c', '#0891b2'];
 
+/** Standard Dots and Boxes room size. */
+export const MAX_PLAYERS = 2;
+
 /** Minimum allowed grid size. */
 const MIN_GRID_SIZE = 3;
 /** Maximum allowed grid size. */
@@ -129,6 +132,14 @@ export function createInitialSnapshot(roomCode: string, gridSize: number, creato
 
 
 /**
+ * Check whether a user can occupy a player seat.
+ */
+export function canJoinAsPlayer(snapshot: SerializedState, userId: string): boolean {
+  return snapshot.players.some((p) => p.userId === userId) || snapshot.players.length < MAX_PLAYERS;
+}
+
+
+/**
  * Add a player to the game snapshot, or reconnect if already present.
  * Also removes the user from spectators if they are joining as a player.
  */
@@ -139,6 +150,10 @@ export function addPlayer(snapshot: SerializedState, userId: string, username: s
       players: snapshot.players.map((p) => p.userId === userId ? { ...p, isConnected: true, username } : p),
       spectators: snapshot.spectators.filter((s) => s.userId !== userId),
     };
+  }
+
+  if (snapshot.players.length >= MAX_PLAYERS) {
+    return snapshot;
   }
 
   const player: PlayerSeat = {

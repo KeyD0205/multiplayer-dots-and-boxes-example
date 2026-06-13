@@ -1,6 +1,7 @@
 import {
   addPlayer,
   applyMove,
+  canJoinAsPlayer,
   createInitialSnapshot,
   edgeKey,
   startIfReady,
@@ -64,6 +65,19 @@ describe('Dots and Boxes rules', () => {
       expect(updated.players.find((p) => p.userId === 'p2')?.isConnected).toBe(true);
       expect(updated.players.find((p) => p.userId === 'p2')?.username).toBe('Linus-New');
       expect(updated.spectators.some((s) => s.userId === 'p2')).toBe(false);
+    });
+
+    test('player seats are capped at two while allowing reconnects', () => {
+      let state = createInitialSnapshot('ROOM01', 3, { userId: 'p1', username: 'Ada' });
+      state = addPlayer(state, 'p2', 'Linus');
+
+      expect(canJoinAsPlayer(state, 'p2')).toBe(true);
+      expect(canJoinAsPlayer(state, 'p3')).toBe(false);
+
+      const updated = addPlayer(state, 'p3', 'Grace');
+
+      expect(updated.players.map((p) => p.userId)).toEqual(['p1', 'p2']);
+      expect(updated.scores.p3).toBeUndefined();
     });
   });
 

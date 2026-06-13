@@ -1,6 +1,6 @@
 /// <reference path="../node_modules/nakama-runtime/index.d.ts" />
 
-import { addPlayer, applyMove, createInitialSnapshot, markDisconnected, normalizeGridSize, startIfReady } from './game';
+import { addPlayer, applyMove, canJoinAsPlayer, createInitialSnapshot, markDisconnected, normalizeGridSize, startIfReady } from './game';
 import { buildHistory, buildRoomRecord, readRoom, writeHistory, writeRoom } from './storage';
 import { CreateRoomPayload, EnsuredMatch, EventPayload, JoinRoomPayload, MatchHistoryRecord, MatchState, OpCode, PlayerSeat, PresenceRef, SerializedState, StatePayload } from './types';
 
@@ -53,6 +53,16 @@ function statePayload(state: MatchState): StatePayload {
     matchId: state.matchId,
     snapshot: serialize(state),
   };
+}
+
+function hasConnectedPresenceForUser(state: MatchState, userId: string): boolean {
+  for (var sessionId in state.presences) {
+    if (state.presences[sessionId].userId === userId) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function decodeMessageData(data: unknown): string {
@@ -193,6 +203,10 @@ function joinRoomRpc(
   var snapshot = room.snapshot as SerializedState;
 
   if (!body.spectator && snapshot.status !== 'finished') {
+    if (!canJoinAsPlayer(snapshot, ctx.userId)) {
+      throw new Error('Room already has two players. Join as a spectator.');
+    }
+
     snapshot = addPlayer(snapshot, ctx.userId, username);
     snapshot = startIfReady(snapshot);
   }
@@ -289,23 +303,9 @@ function matchJoinAttempt(
   _dispatcher: nkruntime.MatchDispatcher,
   _tick: number,
   state: MatchState,
-  presence: nkruntime.Presence,
-  metadata: { [key: string]: any }
+  _presence: nkruntime.Presence,
+  _metadata: { [key: string]: any }
 ) {
-  var spectator = Boolean(metadata && metadata.spectator);
-  var isExistingPlayer = false;
-
-  for (var i = 0; i < state.players.length; i += 1) {
-    if (state.players[i].userId === presence.userId) {
-      isExistingPlayer = true;
-      break;
-    }
-  }
-
-  if (!spectator && state.status === 'finished' && !isExistingPlayer) {
-    return { state: state, accept: false, rejectMessage: 'Finished game is read-only.' };
-  }
-
   return { state: state, accept: true };
 }
 
@@ -327,7 +327,7 @@ function matchJoin(
 
   for (var p = 0; p < presences.length; p += 1) {
     var presence = presences[p];
-    state.presences[presence.userId] = presence;
+    state.presences[presence.sessionId] = presence;
 
     var existingPlayer: PlayerSeat | null = null;
     for (var i = 0; i < state.players.length; i += 1) {
@@ -403,9 +403,12 @@ function matchLeave(
 ) {
   for (var p = 0; p < presences.length; p += 1) {
     var presence = presences[p];
-    delete state.presences[presence.userId];
-    var updated = markDisconnected(serialize(state), presence.userId);
-    Object.assign(state, updated);
+    delete state.presences[presence.sessionId];
+
+    if (!hasConnectedPresenceForUser(state, presence.userId)) {
+      var updated = markDisconnected(serialize(state), presence.userId);
+      Object.assign(state, updated);
+    }
   }
 
   writeRoom(
