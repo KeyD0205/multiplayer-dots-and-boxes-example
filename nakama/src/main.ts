@@ -325,7 +325,13 @@ function matchJoin(
 
   var persistedRoom = readRoom(nk, logger, state.roomCode);
   if (persistedRoom && persistedRoom.snapshot) {
-    Object.assign(state, persistedRoom.snapshot);
+    var persistedMoveCount = (persistedRoom.snapshot.moveLog && persistedRoom.snapshot.moveLog.length) || 0;
+    var liveMoveCount = (state.moveLog && state.moveLog.length) || 0;
+    if (persistedMoveCount >= liveMoveCount) {
+      Object.assign(state, persistedRoom.snapshot);
+    } else {
+      logger.info('Room %s: skipping storage overwrite on join (live=%d moves, stored=%d)', state.roomCode, liveMoveCount, persistedMoveCount);
+    }
   }
 
   for (var p = 0; p < presences.length; p += 1) {
