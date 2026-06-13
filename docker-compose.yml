@@ -22,6 +22,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./nakama/local.yml:/nakama/data/local.yml:ro
     entrypoint:
       - /bin/sh
       - -ecx
