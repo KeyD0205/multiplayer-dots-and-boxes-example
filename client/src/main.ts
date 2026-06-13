@@ -42,6 +42,7 @@ type RoomRpcResult = {
   roomCode: string;
   matchId: string;
   snapshot: Snapshot;
+  role?: 'player' | 'spectator';
   spectator?: boolean;
 };
 
@@ -554,18 +555,19 @@ async function joinRoomWithCode(roomCode: string, spectator: boolean) {
     spectator,
   });
 
-  state.isSpectator = spectator;
+  const joinedAsSpectator = result.role ? result.role === 'spectator' : Boolean(result.spectator);
+  state.isSpectator = joinedAsSpectator;
   state.currentMatchId = result.matchId;
   state.snapshot = result.snapshot;
   roomCodeInput.value = result.roomCode;
-  saveRoomState(result.roomCode, spectator);
+  saveRoomState(result.roomCode, joinedAsSpectator);
 
   if (state.session) {
     state.currentUserId = state.session.user_id;
   }
 
   await state.socket.joinMatch(result.matchId);
-  log(`${spectator ? 'Spectating' : 'Joined'} room ${result.roomCode}.`);
+  log(`${joinedAsSpectator ? 'Spectating' : 'Joined'} room ${result.roomCode}.`);
   render();
 }
 

@@ -211,6 +211,14 @@ function joinRoomRpc(
     snapshot = startIfReady(snapshot);
   }
 
+  var role = 'spectator';
+  for (var p = 0; p < snapshot.players.length; p += 1) {
+    if (snapshot.players[p].userId === ctx.userId) {
+      role = 'player';
+      break;
+    }
+  }
+
   var updatedRoom = buildRoomRecord(snapshot, matchId, room.createdBy);
   writeRoom(nk, logger, updatedRoom);
 
@@ -218,7 +226,8 @@ function joinRoomRpc(
     roomCode: roomCode,
     matchId: matchId,
     snapshot: snapshot,
-    spectator: Boolean(body.spectator),
+    role: role,
+    spectator: role === 'spectator',
   });
 }
 
