@@ -5,7 +5,12 @@ import { buildHistory, buildRoomRecord, readRoom, writeHistory, writeRoom } from
 import { CreateRoomPayload, EnsuredMatch, EventPayload, JoinRoomPayload, MatchHistoryRecord, MatchState, OpCode, PlayerSeat, PresenceRef, SerializedState, StatePayload } from './types';
 
 function randomRoomCode(): string {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var code = '';
+  for (var i = 0; i < 6; i += 1) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
 }
 
 function json<T>(payload: string): T {
