@@ -51,6 +51,16 @@ docker compose up --build
 
 > If the console credentials are needed in your environment, set them in the Nakama container entrypoint/config. This repo keeps the app itself focused on the game runtime and browser client.
 
+### Local two-player demo
+
+1. Open http://localhost:8080 and click **Connect**.
+2. Click **Create Room** and copy the six-character room code.
+3. Open a second tab or window, click **New Local Player**, then click **Connect**.
+4. Paste the room code and click **Join Room**.
+5. Use **Spectate** from another tab to verify read-only live viewing.
+
+The browser client stores a local device identity in `localStorage`. **New Local Player** clears that identity so a same-browser demo can represent a second authenticated user.
+
 ### Stop
 
 ```bash
@@ -87,6 +97,17 @@ Or from the root:
 ```bash
 make test
 ```
+
+Current automated coverage:
+
+- Pure Dots and Boxes rules: move validation, turn order, scoring, box completion, win detection.
+- Player seat behavior: two-player cap and reconnect-safe player seats.
+
+Recommended showcase coverage to add next:
+
+- RPC/match lifecycle tests with mocked Nakama APIs: create room, join room, spectator join, history listing.
+- Browser or Playwright smoke test: connect, create room, join as a second local player, make one move.
+- Docker smoke test: `docker compose up --build`, then verify the web client and Nakama API are reachable.
 
 ### Type checking
 
