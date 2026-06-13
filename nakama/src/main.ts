@@ -500,15 +500,19 @@ function matchLoop(
 
     logger.info('Room %s accepted move %s from %s', state.roomCode, payload.edgeKey, message.sender.userId);
 
-    writeRoom(
-      nk,
-      logger,
-      buildRoomRecord(
-        serialize(state),
-        state.matchId,
-        state.players.length ? state.players[0].userId : ''
-      )
-    );
+    try {
+      writeRoom(
+        nk,
+        logger,
+        buildRoomRecord(
+          serialize(state),
+          state.matchId,
+          state.players.length ? state.players[0].userId : ''
+        )
+      );
+    } catch (writeErr) {
+      logger.warn('Room %s: failed to persist state after move %s: %s', state.roomCode, payload.edgeKey, String(writeErr));
+    }
 
     dispatcher.broadcastMessage(
       OpCode.STATE,
