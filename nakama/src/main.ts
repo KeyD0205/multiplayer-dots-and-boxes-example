@@ -275,7 +275,20 @@ function listHistoryRpc(
   var objects: Array<{ value: MatchHistoryRecord }> = (records && records.objects) ? records.objects : [];
 
   return JSON.stringify({
-    items: objects.map(function (o) { return o.value; }),
+    items: objects.map(function (o) {
+      var h = o.value;
+      return {
+        roomCode: h.roomCode,
+        gridSize: h.gridSize,
+        startedAt: h.startedAt,
+        finishedAt: h.finishedAt,
+        durationSec: h.durationSec,
+        moves: h.moves,
+        scores: h.scores,
+        winnerIds: h.winnerIds,
+        players: h.players,
+      };
+    }),
   });
 }
 
