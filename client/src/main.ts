@@ -97,6 +97,7 @@ app.innerHTML = `
           <option value="7">7x7 dots</option>
         </select>
         <button id="connectBtn">Connect</button>
+        <button id="resetIdentityBtn" class="secondary">New Local Player</button>
         <span id="authState" class="badge">Disconnected</span>
       </div>
     </div>
@@ -109,7 +110,7 @@ app.innerHTML = `
         <button id="spectateBtn" class="secondary" disabled>Spectate</button>
         <button id="refreshHistoryBtn" class="secondary" disabled>Refresh History</button>
       </div>
-      <p class="small">Create a room, then open the app in a second browser tab or window to join the same room code.</p>
+      <p class="small">For a same-browser demo, open a second tab and choose New Local Player before joining the room code.</p>
     </div>
 
     <div class="panel">
@@ -139,6 +140,7 @@ app.innerHTML = `
 const usernameInput = document.querySelector<HTMLInputElement>('#username')!;
 const gridSizeInput = document.querySelector<HTMLSelectElement>('#gridSize')!;
 const connectBtn = document.querySelector<HTMLButtonElement>('#connectBtn')!;
+const resetIdentityBtn = document.querySelector<HTMLButtonElement>('#resetIdentityBtn')!;
 const createBtn = document.querySelector<HTMLButtonElement>('#createBtn')!;
 const joinBtn = document.querySelector<HTMLButtonElement>('#joinBtn')!;
 const spectateBtn = document.querySelector<HTMLButtonElement>('#spectateBtn')!;
@@ -161,6 +163,15 @@ function extractErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (typeof err === 'object' && err !== null && 'message' in err) return String((err as any).message);
   return String(err);
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function showErrorNotification(message: string) {
@@ -221,6 +232,10 @@ function loadSession(): Session | null {
 
 function clearSession() {
   localStorage.removeItem(SESSION_KEY);
+}
+
+function clearDeviceId() {
+  localStorage.removeItem(DEVICE_KEY);
 }
 
 function saveRoomState(roomCode: string, spectator: boolean) {
@@ -339,6 +354,14 @@ async function disconnect() {
   clearRoomState();
   setConnectedUi(false);
   render();
+}
+
+async function resetLocalIdentity() {
+  await disconnect();
+  clearDeviceId();
+  usernameInput.value = '';
+  roomCodeInput.value = '';
+  log('Local player identity reset.');
 }
 
 function setupSocketHandlers() {
@@ -552,24 +575,40 @@ async function refreshHistory() {
   const result = await rpc<{ items: HistoryEntry[] }>('list_history', {});
   const items = result.items || [];
 
-  historyEl.innerHTML =
-    items.length === 0
-      ? '<div class="small">No completed matches yet.</div>'
-      : items
-          .slice()
-          .reverse()
-          .map(
-            (entry) => `
-      <div class="history-item">
-        <div><strong>${entry.roomCode}</strong> · ${entry.gridSize}x${entry.gridSize} dots · ${entry.moves} moves</div>
-        <div class="small">Finished ${new Date(entry.finishedAt).toLocaleString()} · Duration ${entry.durationSec}s</div>
-        <div class="small">Winners: ${
-          entry.winnerIds.map((id) => entry.players.find((p) => p.userId === id)?.username || id).join(', ') || 'Draw'
-        }</div>
-      </div>
-    `
-          )
-          .join('');
+  historyEl.textContent = '';
+
+  if (items.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'small';
+    empty.textContent = 'No completed matches yet.';
+    historyEl.appendChild(empty);
+    return;
+  }
+
+  for (const entry of items.slice().reverse()) {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+
+    const summary = document.createElement('div');
+    const room = document.createElement('strong');
+    room.textContent = entry.roomCode;
+    summary.appendChild(room);
+    summary.append(` - ${entry.gridSize}x${entry.gridSize} dots - ${entry.moves} moves`);
+
+    const details = document.createElement('div');
+    details.className = 'small';
+    details.textContent = `Finished ${new Date(entry.finishedAt).toLocaleString()} - Duration ${entry.durationSec}s`;
+
+    const winners = document.createElement('div');
+    winners.className = 'small';
+    const winnerNames =
+      entry.winnerIds.map((id) => entry.players.find((p) => p.userId === id)?.username || id).join(', ') || 'Draw';
+    winners.textContent = `Winners: ${winnerNames}`;
+
+    item.append(summary, details, winners);
+    historyEl.appendChild(item);
+  }
+
 }
 
 function edgeKey(aX: number, aY: number, bX: number, bY: number): string {
@@ -654,7 +693,7 @@ function renderBoard() {
           ${parts}
           ${
             boxOwner
-              ? `<div class="box" style="background:${colorFor(boxOwner)}">${playerName(boxOwner).slice(0, 1).toUpperCase()}</div>`
+              ? `<div class="box" style="background:${colorFor(boxOwner)}">${escapeHtml(playerName(boxOwner).slice(0, 1).toUpperCase())}</div>`
               : ''
           }
           <span class="dot tl"></span><span class="dot tr"></span><span class="dot bl"></span><span class="dot br"></span>
@@ -675,27 +714,48 @@ function render() {
     return;
   }
 
-  roomSummary.innerHTML = `
-    <div class="row">
-      <span class="badge">Room ${state.snapshot.roomCode}</span>
-      <span class="badge">Status: ${state.snapshot.status}</span>
-      <span class="badge">${state.isSpectator ? 'Spectator' : 'Player'}</span>
-      <span class="badge">Turn: ${state.snapshot.currentTurnUserId ? playerName(state.snapshot.currentTurnUserId) : '—'}</span>
-    </div>
-    <p class="small">Players connected: ${state.snapshot.players.filter((p) => p.isConnected).length}/${state.snapshot.players.length}. Spectators: ${state.snapshot.spectators.length}.</p>
-  `;
+  roomSummary.textContent = '';
+  const summaryRow = document.createElement('div');
+  summaryRow.className = 'row';
 
-  scores.innerHTML = state.snapshot.players
-    .map(
-      (player) => `
-        <div class="score-card">
-          <div><strong style="color:${player.color}">${player.username}</strong></div>
-          <div>Score: ${state.snapshot!.scores[player.userId] ?? 0}</div>
-          <div class="small">${player.isConnected ? 'Connected' : 'Disconnected'}</div>
-        </div>
-      `
-    )
-    .join('');
+  for (const label of [
+    `Room ${state.snapshot.roomCode}`,
+    `Status: ${state.snapshot.status}`,
+    state.isSpectator ? 'Spectator' : 'Player',
+    `Turn: ${state.snapshot.currentTurnUserId ? playerName(state.snapshot.currentTurnUserId) : '-'}`,
+  ]) {
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = label;
+    summaryRow.appendChild(badge);
+  }
+
+  const connectionSummary = document.createElement('p');
+  connectionSummary.className = 'small';
+  connectionSummary.textContent = `Players connected: ${state.snapshot.players.filter((p) => p.isConnected).length}/${state.snapshot.players.length}. Spectators: ${state.snapshot.spectators.length}.`;
+  roomSummary.append(summaryRow, connectionSummary);
+
+  scores.textContent = '';
+  for (const player of state.snapshot.players) {
+    const card = document.createElement('div');
+    card.className = 'score-card';
+
+    const nameLine = document.createElement('div');
+    const name = document.createElement('strong');
+    name.style.color = player.color;
+    name.textContent = player.username;
+    nameLine.appendChild(name);
+
+    const scoreLine = document.createElement('div');
+    scoreLine.textContent = `Score: ${state.snapshot.scores[player.userId] ?? 0}`;
+
+    const statusLine = document.createElement('div');
+    statusLine.className = 'small';
+    statusLine.textContent = player.isConnected ? 'Connected' : 'Disconnected';
+
+    card.append(nameLine, scoreLine, statusLine);
+    scores.appendChild(card);
+  }
 
   if (
     state.snapshot.status === 'finished' &&
@@ -711,6 +771,7 @@ function render() {
 }
 
 connectBtn.addEventListener('click', addErrorHandler(connect, 'Connect'));
+resetIdentityBtn.addEventListener('click', addErrorHandler(resetLocalIdentity, 'Reset identity'));
 createBtn.addEventListener('click', addErrorHandler(createRoom, 'Create room'));
 joinBtn.addEventListener('click', addErrorHandler(() => joinRoom(false), 'Join room'));
 spectateBtn.addEventListener('click', addErrorHandler(() => joinRoom(true), 'Spectate'));
