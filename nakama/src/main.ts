@@ -471,6 +471,9 @@ function matchLoop(
       }
       logger.info('Decoded move payload: %s', raw);
       payload = JSON.parse(raw);
+      if (typeof payload.edgeKey !== 'string' || !payload.edgeKey) {
+        throw new Error('edgeKey missing or invalid.');
+      }
     } catch (err) {
       logger.warn('Move parse failed from %s: %s', message.sender.userId, String(err));
       dispatcher.broadcastMessage(
