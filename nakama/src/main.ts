@@ -226,11 +226,15 @@ function joinRoomRpc(
 }
 
 function getRoomRpc(
-  _ctx: nkruntime.Context,
+  ctx: nkruntime.Context,
   logger: nkruntime.Logger,
   nk: nkruntime.Nakama,
   payload: string
 ): string {
+  if (!ctx.userId) {
+    throw new Error('Authentication required.');
+  }
+
   var body = json<{ roomCode: string }>(payload);
   var roomCode = body.roomCode ? body.roomCode.trim().toUpperCase() : '';
 
@@ -248,11 +252,14 @@ function getRoomRpc(
 }
 
 function listHistoryRpc(
-  _ctx: nkruntime.Context,
+  ctx: nkruntime.Context,
   _logger: nkruntime.Logger,
   nk: nkruntime.Nakama,
   _payload: string
 ): string {
+  if (!ctx.userId) {
+    throw new Error('Authentication required.');
+  }
   var records = (nk as any).storageList('00000000-0000-0000-0000-000000000000', 'match_history', 50, '', '');
   var objects: Array<{ value: MatchHistoryRecord }> = (records && records.objects) ? records.objects : [];
 
