@@ -42,6 +42,7 @@ services:
         VITE_NAKAMA_PORT: ${VITE_NAKAMA_PORT:-7350}
         VITE_NAKAMA_SCHEME: ${VITE_NAKAMA_SCHEME:-http}
         NAKAMA_CLIENT_PUBLIC: ${NAKAMA_CLIENT_PUBLIC:-defaultkey}
+        NAKAMA_CONNECT_SRC: ${NAKAMA_CONNECT_SRC:-http://localhost:7350 ws://localhost:7350}
     depends_on:
       - nakama
     healthcheck:
