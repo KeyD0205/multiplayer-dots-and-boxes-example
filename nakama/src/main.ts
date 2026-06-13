@@ -149,6 +149,9 @@ function createRoomRpc(
   }
 
   var username = (body.username && body.username.trim()) || ctx.username || ('Player-' + ctx.userId.slice(0, 6));
+  if (username.length > 24) {
+    throw new Error('Username must be 24 characters or fewer.');
+  }
   var gridSize = normalizeGridSize(body.gridSize);
 
   var roomCode = randomRoomCode();
@@ -199,6 +202,9 @@ function joinRoomRpc(
   var room = ensured.room;
   var matchId = ensured.matchId;
   var username = (body.username && body.username.trim()) || ctx.username || ('Player-' + ctx.userId.slice(0, 6));
+  if (username.length > 24) {
+    throw new Error('Username must be 24 characters or fewer.');
+  }
 
   var snapshot = room.snapshot as SerializedState;
 
