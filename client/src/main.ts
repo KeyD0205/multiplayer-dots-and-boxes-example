@@ -91,10 +91,12 @@ app.innerHTML = `
       <div class="row">
         <input id="username" placeholder="Username" maxlength="24" />
         <select id="gridSize">
-          <option value="4" selected>4x4 dots</option>
-          <option value="5">5x5 dots</option>
+          <option value="3">3x3 dots</option>
+          <option value="4">4x4 dots</option>
+          <option value="5" selected>5x5 dots (default)</option>
           <option value="6">6x6 dots</option>
           <option value="7">7x7 dots</option>
+          <option value="8">8x8 dots</option>
         </select>
         <button id="connectBtn">Connect</button>
         <button id="resetIdentityBtn" class="secondary">New Local Player</button>
