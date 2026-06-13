@@ -349,6 +349,11 @@ function matchJoin(
     if (existingPlayer) {
       existingPlayer.isConnected = true;
       existingPlayer.username = presence.username || existingPlayer.username;
+
+      if (state.status === 'active' && state.currentTurnUserId === null) {
+        state.currentTurnUserId = existingPlayer.userId;
+        logger.info('Room %s: repaired null turn to reconnecting player %s', state.roomCode, existingPlayer.userId);
+      }
     } else {
       var spectatorSeat: PresenceRef = {
         userId: presence.userId,
