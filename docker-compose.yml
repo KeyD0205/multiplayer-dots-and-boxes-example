@@ -12,8 +12,6 @@ services:
       retries: 10
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
 
   nakama:
     build:
@@ -32,7 +30,7 @@ services:
         exec /nakama/nakama --config /nakama/data/local.yml --database.address ${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-localdb}@postgres:5432/${POSTGRES_DB:-nakama}
     ports:
       - "7350:7350"
-      - "7351:7351"
+      - "127.0.0.1:7351:7351"
     restart: unless-stopped
 
   web:
