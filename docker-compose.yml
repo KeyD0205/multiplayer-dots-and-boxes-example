@@ -31,6 +31,12 @@ services:
     ports:
       - "7350:7350"
       - "127.0.0.1:7351:7351"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:7350/healthcheck || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   web:
@@ -44,7 +50,8 @@ services:
         NAKAMA_CLIENT_PUBLIC: ${NAKAMA_CLIENT_PUBLIC:-defaultkey}
         NAKAMA_CONNECT_SRC: ${NAKAMA_CONNECT_SRC:-http://localhost:7350 ws://localhost:7350}
     depends_on:
-      - nakama
+      nakama:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/"]
       interval: 10s
